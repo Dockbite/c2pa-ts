@@ -148,3 +148,34 @@ export function getExpectedValidationStatusEntriesUntrusted(manifestLabel: strin
         },
     ];
 }
+
+
+
+export function getExpectedValidationStatusEntriesWrongTimeStamp(manifestLabel: string | undefined) {
+    return [
+        {
+            code: ValidationStatusCode.TimeStampOutsideValidity,
+            explanation: 'Timestamp outside signer certificate validity period',
+            url: `self#jumbf=/c2pa/${manifestLabel}/c2pa.signature`,
+            success: false,
+        },
+        {
+            code: ValidationStatusCode.SigningCredentialExpired,
+            explanation: undefined,
+            url: `self#jumbf=/c2pa/${manifestLabel}/c2pa.signature`,
+            success: false,
+        },
+        {
+            code: ValidationStatusCode.ClaimSignatureValidated,
+            explanation: undefined,
+            url: `self#jumbf=/c2pa/${manifestLabel}/c2pa.signature`,
+            success: true,
+        },
+        {
+            code: ValidationStatusCode.AssertionHashedURIMatch,
+            explanation: undefined,
+            url: 'self#jumbf=c2pa.assertions/c2pa.hash.data',
+            success: true,
+        },
+    ];
+}

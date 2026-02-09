@@ -451,15 +451,12 @@ export class Signature {
 
         let code = await Signature.validateCertificate(this.certificate, timestamp, true);
         if (code === ValidationStatusCode.SigningCredentialTrusted) {
-            for (const chainCertificate of this.chainCertificates) {
-                code = await Signature.validateCertificate(chainCertificate, timestamp, false);
-                if (code !== ValidationStatusCode.SigningCredentialTrusted) break;
-            }
-
-            if (code === ValidationStatusCode.SigningCredentialTrusted) {
-                // Validate chain against trust anchors
-                code = await Signature.validateChain(this.certificate, this.chainCertificates, TrustList.trustAnchors);
-            }
+            code = await Signature.validateChain(
+                this.certificate,
+                timestamp,
+                this.chainCertificates,
+                TrustList.trustAnchors,
+            );
         }
         if (code === ValidationStatusCode.SigningCredentialTrusted) result.addInformational(code, sourceBox);
         else result.addError(code, sourceBox);
@@ -640,8 +637,21 @@ export class Signature {
         });
     }
 
+    /**
+     * Validates a certificate chain from a leaf certificate to a trusted root.
+     * Traverses the certificate chain by finding issuers in the intermediates list,
+     * validating each certificate's signature and timestamp. Returns a status indicating
+     * whether the chain terminates in a trusted root certificate.
+     * @param leaf - The leaf certificate to validate
+     * @param timestamp - The timestamp to validate certificates against
+     * @param intermediates - Array of intermediate certificates to use for chain building
+     * @param trustedRoots - Array of trusted root certificates
+     * @returns Promise resolving to a ValidationStatusCode indicating if the chain is trusted
+     * @throws Does not throw; errors are returned as validation status codes
+     */
     private static async validateChain(
         leaf: X509Certificate,
+        timestamp: Date,
         intermediates: X509Certificate[],
         trustedRoots: X509Certificate[],
     ): Promise<ValidationStatusCode> {
@@ -653,10 +663,11 @@ export class Signature {
             }
             const trustedRoot = trustedRoots.find(r => r.subject === current.issuer);
             if (trustedRoot) {
-                const ok = await this.verifySignature(current, trustedRoot);
-                if (!ok) {
+                // Signature check and validate certificate and timestamp for the root
+                if (!(await Signature.validateChainCertificate(current, trustedRoot, timestamp))) {
                     return ValidationStatusCode.SigningCredentialUntrusted;
                 }
+
                 return ValidationStatusCode.SigningCredentialTrusted;
             }
 
@@ -669,9 +680,8 @@ export class Signature {
                 return ValidationStatusCode.SigningCredentialUntrusted;
             }
 
-            // Signature check
-            const valid = await this.verifySignature(current, issuer);
-            if (!valid) {
+            // Signature check and validate certificate and timestamp for the issuer
+            if (!(await Signature.validateChainCertificate(current, issuer, timestamp))) {
                 return ValidationStatusCode.SigningCredentialUntrusted;
             }
 
@@ -683,5 +693,36 @@ export class Signature {
             seen.add(issuer.subject);
             current = issuer;
         }
+    }
+
+    /**
+     * Validates a certificate chain by verifying the signature and certificate validity.
+     * @param current - The current certificate in the chain to be validated
+     * @param issuer - The issuer certificate used to verify the current certificate's signature
+     * @param timestamp - The timestamp at which the certificate should be valid
+     * @returns A promise that resolves to `true` if both the signature verification and certificate validation succeed, `false` otherwise
+     * This method performs two validations:
+     * 1. Verifies that the current certificate is properly signed by the issuer certificate
+     * 2. Validates that the issuer certificate is trusted and valid at the given timestamp
+     * Both validations must pass for the method to return `true`.
+     */
+    private static async validateChainCertificate(
+        current: X509Certificate,
+        issuer: X509Certificate,
+        timestamp: Date,
+    ): Promise<boolean> {
+        // Signature check
+        const verifySignature = await this.verifySignature(current, issuer);
+        if (!verifySignature) {
+            return false;
+        }
+
+        // Validate certificate and timestamp for the issuer
+        const validateCertificate = await Signature.validateCertificate(issuer, timestamp, false);
+        if (validateCertificate !== ValidationStatusCode.SigningCredentialTrusted) {
+            return false;
+        }
+
+        return true;
     }
 }
