@@ -32,6 +32,18 @@ import {
     UnprotectedBucket,
 } from './types';
 
+/**
+ * Options for signature validation.
+ */
+export interface ValidationOptions {
+    /**
+     * Trust anchors (root certificates) to use for chain validation.
+     * Accepts PEM strings, DER bytes, or X509Certificate instances.
+     * If not provided, defaults to TrustList.trustAnchors for backwards compatibility.
+     */
+    trustAnchors?: (string | Uint8Array | X509Certificate)[];
+}
+
 export class Signature {
     public algorithm?: CoseAlgorithm;
     public certificate?: X509Certificate;
@@ -437,9 +449,14 @@ export class Signature {
      * Validates the signature against a payload
      * @param payload - The payload to validate against
      * @param sourceBox - Optional JUMBF box for error context
+     * @param options - Optional validation options including trust anchors
      * @returns Promise resolving to ValidationResult
      */
-    public async validate(payload: Uint8Array, sourceBox?: JUMBF.IBox): Promise<ValidationResult> {
+    public async validate(
+        payload: Uint8Array,
+        sourceBox?: JUMBF.IBox,
+        options?: ValidationOptions,
+    ): Promise<ValidationResult> {
         if (!this.certificate || !this.rawProtectedBucket || !this.signature || !this.algorithm) {
             return ValidationResult.error(ValidationStatusCode.SigningCredentialInvalid, sourceBox);
         }
@@ -449,14 +466,13 @@ export class Signature {
         result.merge(await this.validateTimestamp(payload, CBORBox.encoder.encode(this.signature), sourceBox));
         const timestamp = this.validatedTimestamp ?? new Date();
 
+        // Parse trust anchors from options or fall back to global TrustList for backwards compatibility
+        const trustAnchors =
+            options?.trustAnchors ? TrustList.parseTrustAnchors(options.trustAnchors) : TrustList.trustAnchors;
+
         let code = await Signature.validateCertificate(this.certificate, timestamp, true);
         if (code === ValidationStatusCode.SigningCredentialTrusted) {
-            code = await Signature.validateChain(
-                this.certificate,
-                timestamp,
-                this.chainCertificates,
-                TrustList.trustAnchors,
-            );
+            code = await Signature.validateChain(this.certificate, timestamp, this.chainCertificates, trustAnchors);
         }
         if (code === ValidationStatusCode.SigningCredentialTrusted) result.addInformational(code, sourceBox);
         else result.addError(code, sourceBox);
@@ -628,7 +644,7 @@ export class Signature {
         const ski = issuer.getExtension(SubjectKeyIdentifierExtension)?.keyId;
         if (!aki || !ski) return false;
 
-        return Buffer.compare(Buffer.from(aki), Buffer.from(ski)) === 0;
+        return aki === ski;
     }
 
     private static async verifySignature(cert: X509Certificate, issuer: X509Certificate): Promise<boolean> {
@@ -657,23 +673,37 @@ export class Signature {
     ): Promise<ValidationStatusCode> {
         let current = leaf;
         const seen = new Set<string>();
+
+        const trustedRootThumbprints = await Promise.all(
+            trustedRoots.map(async r => {
+                return await r.publicKey.getThumbprint();
+            }),
+        );
         while (true) {
-            if (trustedRoots.find(r => r.subject === current.subject)) {
+            // Check if current certificate is directly trusted
+            const currentThumbprint = await current.publicKey.getThumbprint();
+            const found = trustedRootThumbprints.find(trustedRootThumbprint =>
+                BinaryHelper.bufEqual(new Uint8Array(trustedRootThumbprint), new Uint8Array(currentThumbprint)),
+            );
+            if (found) {
                 return ValidationStatusCode.SigningCredentialTrusted;
             }
-            const trustedRoot = trustedRoots.find(r => r.subject === current.issuer);
-            if (trustedRoot) {
-                // Signature check and validate certificate and timestamp for the root
-                if (!(await Signature.validateChainCertificate(current, trustedRoot, timestamp))) {
-                    return ValidationStatusCode.SigningCredentialUntrusted;
-                }
 
+            // Find a trusted root that directly signed the current certificate to avoid unnecessary chain building and signature checks
+            let foundTrustedRoot = undefined;
+            for (const trustedRoot of trustedRoots) {
+                if (await Signature.validateChainCertificate(current, trustedRoot, timestamp)) {
+                    foundTrustedRoot = trustedRoot;
+                    break;
+                }
+            }
+            if (foundTrustedRoot) {
                 return ValidationStatusCode.SigningCredentialTrusted;
             }
 
             // Search issuer in intermediates
-            const issuer = (intermediates || []).find(i => {
-                return Signature.keyIdsMatch(current, i);
+            const issuer = (intermediates || []).find(intermediate => {
+                return Signature.keyIdsMatch(current, intermediate);
             });
 
             if (!issuer) {

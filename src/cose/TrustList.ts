@@ -1,13 +1,32 @@
 import { X509Certificate } from '@peculiar/x509';
 
 export class TrustList {
+    /**
+     * @deprecated Global mutable trust anchors cause race conditions and test flakiness.
+     * Use ValidationOptions.trustAnchors parameter in Signature.validate() instead.
+     * This property is maintained for backwards compatibility only.
+     */
     static trustAnchors: X509Certificate[] = [];
 
     /**
+     * @deprecated Global mutable trust anchors cause race conditions and test flakiness.
+     * Use ValidationOptions.trustAnchors parameter in Signature.validate() instead.
+     * This method is maintained for backwards compatibility only.
+     *
      * Configures global trust anchors used for PKI.js chain validation.
      * Accepts PEM strings (single or multiple concatenated certs), DER bytes, or `X509Certificate` instances.
      */
     public static setTrustAnchors(anchors: (string | Uint8Array | X509Certificate)[]): void {
+        TrustList.trustAnchors = TrustList.parseTrustAnchors(anchors);
+    }
+
+    /**
+     * Parses trust anchors from various formats into X509Certificate instances.
+     * Accepts PEM strings (single or multiple concatenated certs), DER bytes, or `X509Certificate` instances.
+     * @param anchors - Array of trust anchors in various formats
+     * @returns Array of parsed X509Certificate instances
+     */
+    public static parseTrustAnchors(anchors: (string | Uint8Array | X509Certificate)[]): X509Certificate[] {
         const out: X509Certificate[] = [];
         for (const a of anchors) {
             if (typeof a === 'string') {
@@ -30,8 +49,7 @@ export class TrustList {
             }
         }
 
-        // Replace existing anchors
-        TrustList.trustAnchors = out;
+        return out;
     }
 
     /**
@@ -44,8 +62,7 @@ export class TrustList {
         while ((match = pattern.exec(pem)) !== null) {
             const base64 = match[1].replace(/\r?\n|\s/g, '');
             try {
-                const buf = Buffer.from(base64, 'base64');
-                out.push(new Uint8Array(buf));
+                out.push(Uint8Array.fromBase64(base64));
             } catch {
                 /* ignore invalid blocks */
             }

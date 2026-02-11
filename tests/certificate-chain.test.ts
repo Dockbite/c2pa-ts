@@ -165,6 +165,16 @@ async function toPkcs8Bytes(key: CryptoKey): Promise<Uint8Array> {
     return new Uint8Array(der);
 }
 
+enum ExtensionClassNames {
+    BasicConstraintsExtension = 'BasicConstraintsExtension',
+    ExtendedKeyUsageExtension = 'ExtendedKeyUsageExtension',
+    KeyUsagesExtension = 'KeyUsagesExtension',
+    SubjectKeyIdentifierExtension = 'SubjectKeyIdentifierExtension',
+    AuthorityKeyIdentifierExtension = 'AuthorityKeyIdentifierExtension',
+}
+type ExtensionClassName = keyof typeof ExtensionClassNames;
+type ExtensionChangeMap = Partial<Record<ExtensionClassName, Extension | undefined>>;
+
 /**
  * Builds the standard X.509v3 extensions for a **root CA** certificate.
  *
@@ -250,7 +260,7 @@ async function getLeafExtensions(subjectPublicKey: CryptoKey, issuerPublicKey: C
  */
 async function createRootCertificate(
     partial?: Partial<X509CertificateCreateSelfSignedParams>,
-    extensionChanges?: Record<number, Extension | undefined>,
+    extensionChanges?: ExtensionChangeMap,
 ): Promise<[CryptoKeyPair, X509Certificate]> {
     const rootKeys = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
     const extensions = await getRootExtensions(rootKeys.publicKey);
@@ -283,7 +293,7 @@ async function createIntermediateCertificate(
     rootCert: X509Certificate,
     rootKeys: CryptoKeyPair,
     partial?: Partial<X509CertificateCreateParams>,
-    extensionChanges?: Record<number, Extension | undefined>,
+    extensionChanges?: ExtensionChangeMap,
 ): Promise<[CryptoKeyPair, X509Certificate]> {
     const intermediateKeys = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, [
         'sign',
@@ -320,7 +330,7 @@ async function createLeafCertificate(
     intermediateCert: X509Certificate,
     intermediateKeys: CryptoKeyPair,
     partial?: Partial<X509CertificateCreateParams>,
-    extensionChanges?: Record<number, Extension | undefined>,
+    extensionChanges?: ExtensionChangeMap,
 ): Promise<[CryptoKeyPair, X509Certificate]> {
     const leafKeys = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
     const extensions = await getLeafExtensions(leafKeys.publicKey, intermediateKeys.publicKey);
@@ -350,16 +360,19 @@ async function createLeafCertificate(
  *   (via `splice`).
  *
  * @param extensions - The original ordered array of extensions.
- * @param changes    - A map of `index → replacement | undefined`.
+ * @param changes    - A map of `constructor.name → replacement | undefined`.
  * @returns The mutated extensions array.
  */
-function applyExtensionChanges(extensions: Extension[], changes?: Record<number, Extension | undefined>): Extension[] {
+function applyExtensionChanges(extensions: Extension[], changes?: ExtensionChangeMap): Extension[] {
     if (changes) {
-        for (const [oid, ext] of Object.entries(changes)) {
-            if (ext) {
-                extensions[parseInt(oid)] = ext;
-            } else {
-                extensions.splice(parseInt(oid), 1);
+        for (const [extensionName, replacement] of Object.entries(changes)) {
+            const index = extensions.findIndex((e: Extension) => e.constructor.name === extensionName);
+            if (index >= 0) {
+                if (replacement) {
+                    extensions[index] = replacement;
+                } else {
+                    extensions.splice(index, 1);
+                }
             }
         }
     }
@@ -844,7 +857,12 @@ describe('Certificate Chain Validation', () => {
                 rootCert,
                 rootKeys,
                 undefined,
-                { 1: new KeyUsagesExtension(KeyUsageFlags.keyCertSign + KeyUsageFlags.cRLSign, true) },
+                {
+                    [ExtensionClassNames.KeyUsagesExtension]: new KeyUsagesExtension(
+                        KeyUsageFlags.keyCertSign + KeyUsageFlags.cRLSign,
+                        true,
+                    ),
+                },
             );
             const [otherLeafKeys, otherLeafCert] = await createLeafCertificate(
                 otherIntermediateCert,
@@ -870,7 +888,10 @@ describe('Certificate Chain Validation', () => {
 
         it('should have critical flag on KeyUsage extension for the root', async () => {
             const [otherRootKeys, otherRootCert] = await createRootCertificate(undefined, {
-                1: new KeyUsagesExtension(KeyUsageFlags.digitalSignature + KeyUsageFlags.keyCertSign, false),
+                [ExtensionClassNames.KeyUsagesExtension]: new KeyUsagesExtension(
+                    KeyUsageFlags.digitalSignature + KeyUsageFlags.keyCertSign,
+                    false,
+                ),
             });
 
             const [otherIntermediateKeys, otherIntermediateCert] = await createIntermediateCertificate(
@@ -906,7 +927,7 @@ describe('Certificate Chain Validation', () => {
                 rootCert,
                 rootKeys,
                 undefined,
-                { 0: undefined },
+                { [ExtensionClassNames.BasicConstraintsExtension]: undefined },
             );
             const [otherLeafKeys, otherLeafCert] = await createLeafCertificate(
                 otherIntermediateCert,
@@ -934,7 +955,7 @@ describe('Certificate Chain Validation', () => {
     describe('6. Subject Key Identifier Extension', () => {
         it('root should have a subject key identifier', async () => {
             const [otherRootKeys, otherRootCert] = await createRootCertificate(undefined, {
-                2: undefined,
+                [ExtensionClassNames.SubjectKeyIdentifierExtension]: undefined,
             });
             const [otherIntermediateKeys, otherIntermediateCert] = await createIntermediateCertificate(
                 otherRootCert,
@@ -967,7 +988,7 @@ describe('Certificate Chain Validation', () => {
                 rootCert,
                 rootKeys,
                 undefined,
-                { 3: undefined },
+                { [ExtensionClassNames.SubjectKeyIdentifierExtension]: undefined },
             );
             const [otherLeafKeys, otherLeafCert] = await createLeafCertificate(
                 otherIntermediateCert,
@@ -998,7 +1019,7 @@ describe('Certificate Chain Validation', () => {
                 rootCert,
                 rootKeys,
                 undefined,
-                { 4: undefined },
+                { [ExtensionClassNames.AuthorityKeyIdentifierExtension]: undefined },
             );
             const [otherLeafKeys, otherLeafCert] = await createLeafCertificate(
                 otherIntermediateCert,
