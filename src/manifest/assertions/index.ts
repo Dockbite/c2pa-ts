@@ -4,6 +4,7 @@ export * from './AssertionLabels';
 export * from './BMFFHashAssertion';
 export * from './CreativeWorkAssertion';
 export * from './DataHashAssertion';
+export * from './DecentralisedIdentityAssertion';
 export * from './IngredientAssertion';
 export * from './MetadataAssertion';
 export * from './SchemaOrgAssertion';

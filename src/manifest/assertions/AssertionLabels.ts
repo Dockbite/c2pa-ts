@@ -52,6 +52,9 @@ export class AssertionLabels {
     /** CAWG Training and Data Mining assertion */
     public static readonly cawgTrainingAndDataMining = 'cawg.training-mining';
 
+    /** Decentralised Identity (DID) assertion */
+    public static readonly decentralisedIdentity = 'c2pa.decentralised-identity';
+
     public static readonly thumbnailPrefix = 'c2pa.thumbnail.claim.';
     public static readonly ingredientThumbnailPrefix = 'c2pa.thumbnail.ingredient';
 }
