@@ -160,44 +160,37 @@ const testFiles: Record<string, TestExpectations> = {
     'public-testfiles/legacy/1.4/image/jpeg/truepic-20230212-camera.jpg': {
         assetType: JPEG,
         jumbf: true,
-        valid: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.SigningCredentialUntrusted],
     },
     'public-testfiles/legacy/1.4/image/jpeg/truepic-20230212-landscape.jpg': {
         assetType: JPEG,
         jumbf: true,
-        valid: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.SigningCredentialUntrusted],
     },
     'public-testfiles/legacy/1.4/image/jpeg/truepic-20230212-library.jpg': {
         assetType: JPEG,
         jumbf: true,
-        valid: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.SigningCredentialUntrusted],
     },
     'public-testfiles/legacy/1.4/video/mp4/truepic-20230212-zoetrope.mp4': {
         assetType: BMFF,
         jumbf: true,
-        valid: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.SigningCredentialUntrusted],
     },
     'amazon-titan-g1.png': {
         assetType: PNG,
         jumbf: true,
         valid: true,
     },
-    'trustnxt-icon.jpg': {
-        assetType: JPEG,
-        jumbf: false,
-    },
-    'trustnxt-icon.png': {
-        assetType: PNG,
-        jumbf: false,
-    },
-    'trustnxt-icon.heic': {
-        assetType: BMFF,
-        jumbf: false,
-    },
     'trustnxt-icon-signed-v2-bmff.heic': {
         assetType: BMFF,
         jumbf: true,
-        valid: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.SigningCredentialUntrusted],
     },
     'trustnxt-icon-signed-timestamp.jpg': {
         assetType: JPEG,
@@ -207,10 +200,10 @@ const testFiles: Record<string, TestExpectations> = {
 };
 
 beforeAll(async () => {
-    await setTrustList();
+    await setTrustList('tests/fixtures/trust-list-wrong.pem');
 });
 
-describe('Functional Asset Reading Tests', function () {
+describe('Trust list tests', function () {
     for (const [filename, data] of Object.entries(testFiles)) {
         describe(`test file ${filename}`, () => {
             let buf: Buffer | undefined = undefined;
