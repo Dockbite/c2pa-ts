@@ -40,6 +40,10 @@
     "./rfc3161": {
       "types": "./dist/rfc3161/index.d.ts",
       "import": "./dist/rfc3161/index.js"
+    },
+    "./cawg": {
+      "types": "./dist/cawg/index.d.ts",
+      "import": "./dist/cawg/index.js"
     }
   },
   "files": [

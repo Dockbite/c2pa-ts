@@ -59,6 +59,11 @@ export enum ValidationStatusCode {
     IngredientManifestValidated = 'ingredient.manifest.validated',
     IngredientClaimSignatureValidated = 'ingredient.claimSignature.validated',
 
+    /** The identity assertion is validated and trusted */
+    Trusted = 'cawg.identity.trusted',
+    /** The identity assertion is well-formed but not trusted */
+    WellFormed = 'cawg.identity.well-formed',
+
     // Informational codes
     SigningCredentialOCSPSkipped = 'signingCredential.ocsp.skipped',
     SigningCredentialOCSPInaccessible = 'signingCredential.ocsp.inaccessible',
@@ -129,6 +134,33 @@ export enum ValidationStatusCode {
     HashedURIMissing = 'hashedURI.missing',
     HashedURIMismatch = 'hashedURI.mismatch',
     GeneralError = 'general.error',
+
+    /** The CBOR of the identity assertion is not valid */
+    CborInvalid = 'cawg.identity.cbor.invalid',
+    /** Referenced assertion could not be found in the C2PA claim */
+    AssertionMismatch = 'cawg.identity.assertion.mismatch',
+    /** Identity assertion contains duplicate assertion references */
+    AssertionDuplicate = 'cawg.identity.assertion.duplicate',
+    /** Identity assertion was signed using a revoked credential */
+    CredentialRevoked = 'cawg.identity.credential_revoked',
+    /** Identity assertion does not reference a hard binding assertion */
+    HardBindingMissing = 'cawg.identity.hard_binding_missing',
+    /** Identity assertion does not reference the correct hard binding assertion */
+    HardBindingIncorrect = 'cawg.identity.hard_binding_incorrect',
+    /** The sig_type is not recognized */
+    SigTypeUnknown = 'cawg.identity.sig_type.unknown',
+    /** Pad field contains non-zero bytes */
+    PadInvalid = 'cawg.identity.pad.invalid',
+    /** The expected_partial_claim field did not match */
+    ExpectedPartialClaimMismatch = 'cawg.identity.expected_partial_claim.mismatch',
+    /** The expected_claim_generator field did not match */
+    ExpectedClaimGeneratorMismatch = 'cawg.identity.expected_claim_generator.mismatch',
+    /** Unexpected identity assertion exists in the manifest */
+    UnexpectedCountersigner = 'cawg.identity.unexpected_countersigner',
+    /** Identity assertion has different signing credentials than expected */
+    ExpectedCountersignerMismatch = 'cawg.identity.expected_countersigner.mismatch',
+    /** Expected identity assertion is missing from the manifest */
+    ExpectedCountersignerMissing = 'cawg.identity.expected_countersigner.missing',
 }
 
 export interface ValidationStatusEntry {

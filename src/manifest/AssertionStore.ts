@@ -5,6 +5,7 @@ import {
     BMFFHashAssertion,
     CreativeWorkAssertion,
     DataHashAssertion,
+    IdentityAssertion,
     IngredientAssertion,
     MetadataAssertion,
     TrainingAndDataMiningAssertion,
@@ -76,6 +77,8 @@ export class AssertionStore implements ManifestComponent {
             assertion = new CreativeWorkAssertion();
         } else if (label.label === AssertionLabels.dataHash) {
             assertion = new DataHashAssertion();
+        } else if (label.label === AssertionLabels.identity) {
+            assertion = new IdentityAssertion();
         } else if (
             label.label === AssertionLabels.ingredient ||
             label.label === AssertionLabels.ingredientV2 ||
