@@ -10,13 +10,7 @@
  */
 
 import * as JUMBF from '../jumbf';
-import {
-    addStatus,
-    CawgValidationResult,
-    createFailureStatus,
-    createSuccessStatus,
-    IcaStatusCode,
-} from './status-codes.js';
+import { ValidationResult, ValidationStatusCode } from '../manifest';
 import type {
     C2paAssetBinding,
     IdentityClaimsAggregationCredential,
@@ -194,23 +188,17 @@ export async function validateIcaCredential(
         checkRevocation?: boolean;
         validationTime?: Date;
     },
-): Promise<CawgValidationResult> {
-    const result: CawgValidationResult = {
-        valid: true,
-        statuses: [],
-    };
+): Promise<ValidationResult> {
+    const result: ValidationResult = new ValidationResult();
 
     try {
         // Step 1: Parse COSE_Sign1 structure
         const coseSign1 = await parseCoseSign1(signature);
         if (!coseSign1) {
-            addStatus(
-                result,
-                createFailureStatus(
-                    IcaStatusCode.InvalidCoseSign1,
-                    assertionLabel,
-                    'Failed to parse COSE_Sign1 structure',
-                ),
+            result.addError(
+                ValidationStatusCode.IcaInvalidCoseSign1,
+                assertionLabel,
+                'Failed to parse COSE_Sign1 structure',
             );
             return result;
         }
@@ -218,21 +206,19 @@ export async function validateIcaCredential(
         // Step 2: Validate COSE protected headers
         const algValid = validateCoseAlgorithm(coseSign1.protectedHeader?.alg);
         if (!algValid) {
-            addStatus(
-                result,
-                createFailureStatus(IcaStatusCode.InvalidAlg, assertionLabel, 'Unsupported or missing COSE algorithm'),
+            result.addError(
+                ValidationStatusCode.IcaInvalidAlg,
+                assertionLabel,
+                'Unsupported or missing COSE algorithm',
             );
         }
 
         const contentType = coseSign1.protectedHeader?.contentType;
         if (contentType !== 'application/vc') {
-            addStatus(
-                result,
-                createFailureStatus(
-                    IcaStatusCode.InvalidContentType,
-                    assertionLabel,
-                    'Content type must be "application/vc"',
-                ),
+            result.addError(
+                ValidationStatusCode.IcaInvalidContentType,
+                assertionLabel,
+                'Content type must be "application/vc"',
             );
         }
 
@@ -243,13 +229,10 @@ export async function validateIcaCredential(
         try {
             credential = JSON.parse(credentialJson);
         } catch {
-            addStatus(
-                result,
-                createFailureStatus(
-                    IcaStatusCode.InvalidVerifiableCredential,
-                    assertionLabel,
-                    'Failed to parse verifiable credential JSON',
-                ),
+            result.addError(
+                ValidationStatusCode.IcaInvalidVerifiableCredential,
+                assertionLabel,
+                'Failed to parse verifiable credential JSON',
             );
             return result;
         }
@@ -260,43 +243,31 @@ export async function validateIcaCredential(
         // Step 5: Obtain issuer's public key via DID resolution
         const issuerDid = extractIssuerDid(credential);
         if (!issuerDid) {
-            addStatus(
-                result,
-                createFailureStatus(IcaStatusCode.InvalidIssuer, assertionLabel, 'Issuer is not a valid DID'),
-            );
+            result.addError(ValidationStatusCode.IcaInvalidIssuer, assertionLabel, 'Issuer is not a valid DID');
             return result;
         }
 
         const didMethod = issuerDid.split(':')[1];
         if (!SUPPORTED_DID_METHODS.includes(`did:${didMethod}` as any)) {
-            addStatus(
-                result,
-                createFailureStatus(
-                    IcaStatusCode.DidUnsupportedMethod,
-                    assertionLabel,
-                    `DID method not supported: did:${didMethod}`,
-                ),
+            result.addError(
+                ValidationStatusCode.IcaDidUnsupportedMethod,
+                assertionLabel,
+                `DID method not supported: did:${didMethod}`,
             );
         }
 
         const didDocument = await resolveDid(issuerDid);
         if (!didDocument) {
-            addStatus(
-                result,
-                createFailureStatus(IcaStatusCode.DidUnavailable, assertionLabel, 'Failed to resolve DID document'),
-            );
+            result.addError(ValidationStatusCode.IcaDidUnavailable, assertionLabel, 'Failed to resolve DID document');
             return result;
         }
 
         const publicKey = extractPublicKeyFromDidDocument(didDocument);
         if (!publicKey) {
-            addStatus(
-                result,
-                createFailureStatus(
-                    IcaStatusCode.InvalidDidDocument,
-                    assertionLabel,
-                    'Failed to extract public key from DID document',
-                ),
+            result.addError(
+                ValidationStatusCode.IcaInvalidDidDocument,
+                assertionLabel,
+                'Failed to extract public key from DID document',
             );
             return result;
         }
@@ -305,9 +276,10 @@ export async function validateIcaCredential(
         const issuerTrusted = await verifyIssuerTrust(issuerDid, trustedIssuers, options?.trustedAnchors);
 
         if (!issuerTrusted) {
-            addStatus(
-                result,
-                createFailureStatus(IcaStatusCode.UntrustedIssuer, assertionLabel, 'Issuer DID is not in trusted list'),
+            result.addError(
+                ValidationStatusCode.IcaUntrustedIssuer,
+                assertionLabel,
+                'Issuer DID is not in trusted list',
             );
         }
 
@@ -315,13 +287,10 @@ export async function validateIcaCredential(
         const signatureValid = await verifyCoseSign1(coseSign1, publicKey);
 
         if (!signatureValid) {
-            addStatus(
-                result,
-                createFailureStatus(
-                    IcaStatusCode.SignatureMismatch,
-                    assertionLabel,
-                    'COSE signature verification failed',
-                ),
+            result.addError(
+                ValidationStatusCode.IcaSignatureMismatch,
+                assertionLabel,
+                'COSE signature verification failed',
             );
             return result;
         }
@@ -331,19 +300,13 @@ export async function validateIcaCredential(
         if (timestamp) {
             const timestampValid = await validateTimestamp(timestamp);
             if (timestampValid) {
-                addStatus(
-                    result,
-                    createSuccessStatus(
-                        IcaStatusCode.TimeStampValidated as any,
-                        assertionLabel,
-                        'RFC 3161 timestamp validated',
-                    ),
+                result.addInformational(
+                    ValidationStatusCode.IcaTimeStampValidated as any,
+                    assertionLabel,
+                    'RFC 3161 timestamp validated',
                 );
             } else {
-                addStatus(
-                    result,
-                    createFailureStatus(IcaStatusCode.TimeStampInvalid, assertionLabel, 'Invalid RFC 3161 timestamp'),
-                );
+                result.addError(ValidationStatusCode.IcaTimeStampInvalid, assertionLabel, 'Invalid RFC 3161 timestamp');
             }
         }
 
@@ -362,24 +325,18 @@ export async function validateIcaCredential(
         validateVerifiedIdentities(credential.credentialSubject.verifiedIdentities, assertionLabel, result);
 
         // Step 13: Final status
-        if (result.valid) {
-            addStatus(
-                result,
-                createSuccessStatus(
-                    IcaStatusCode.CredentialValid as any,
-                    assertionLabel,
-                    'Identity claims aggregation credential is valid',
-                ),
+        if (result.isValid) {
+            result.addInformational(
+                ValidationStatusCode.IcaCredentialValid as any,
+                assertionLabel,
+                'Identity claims aggregation credential is valid',
             );
         }
     } catch (error) {
-        addStatus(
-            result,
-            createFailureStatus(
-                IcaStatusCode.InvalidVerifiableCredential,
-                assertionLabel,
-                `Validation error: ${String(error)}`,
-            ),
+        result.addError(
+            ValidationStatusCode.IcaInvalidVerifiableCredential,
+            assertionLabel,
+            `Validation error: ${String(error)}`,
         );
     }
 
@@ -396,31 +353,26 @@ function validateCoseAlgorithm(alg: number | undefined): boolean {
 function validateIcaCredentialStructure(
     credential: IdentityClaimsAggregationCredential,
     label: string,
-    result: CawgValidationResult,
+    result: ValidationResult,
 ): void {
     // Validate @context
     if (!credential['@context'] || !Array.isArray(credential['@context'])) {
-        addStatus(
-            result,
-            createFailureStatus(IcaStatusCode.InvalidVerifiableCredential, label, 'Missing or invalid @context'),
-        );
+        result.addError(ValidationStatusCode.IcaInvalidVerifiableCredential, label, 'Missing or invalid @context');
     }
 
     // Validate type
     if (!credential.type || !Array.isArray(credential.type)) {
-        addStatus(
-            result,
-            createFailureStatus(IcaStatusCode.InvalidVerifiableCredential, label, 'Missing or invalid type'),
-        );
+        result.addError(ValidationStatusCode.IcaInvalidVerifiableCredential, label, 'Missing or invalid type');
     }
 
     const hasRequiredTypes =
         credential.type.includes(VC_TYPE.Verifiable) && credential.type.includes(VC_TYPE.IdentityClaimsAggregation);
 
     if (!hasRequiredTypes) {
-        addStatus(
-            result,
-            createFailureStatus(IcaStatusCode.InvalidVerifiableCredential, label, 'Missing required credential types'),
+        result.addError(
+            ValidationStatusCode.IcaInvalidVerifiableCredential,
+            label,
+            'Missing required credential types',
         );
     }
 }
@@ -473,7 +425,7 @@ async function validateTimestamp(timestamp: any): Promise<boolean> {
 function validateCredentialValidityDates(
     credential: IdentityClaimsAggregationCredential,
     label: string,
-    result: CawgValidationResult,
+    result: ValidationResult,
     validationTime?: Date,
 ): void {
     const now = validationTime ?? new Date();
@@ -481,16 +433,13 @@ function validateCredentialValidityDates(
     // Check validFrom / issuanceDate
     const validFrom = credential.validFrom ?? credential.issuanceDate;
     if (!validFrom) {
-        addStatus(
-            result,
-            createFailureStatus(IcaStatusCode.ValidFromMissing, label, 'Missing validFrom or issuanceDate'),
-        );
+        result.addError(ValidationStatusCode.IcaValidFromMissing, label, 'Missing validFrom or issuanceDate');
         return;
     }
 
     const validFromDate = new Date(validFrom);
     if (validFromDate > now) {
-        addStatus(result, createFailureStatus(IcaStatusCode.ValidFromInvalid, label, 'Credential not yet valid'));
+        result.addError(ValidationStatusCode.IcaValidFromInvalid, label, 'Credential not yet valid');
     }
 
     // Check validUntil / expirationDate
@@ -498,7 +447,7 @@ function validateCredentialValidityDates(
     if (validUntil) {
         const validUntilDate = new Date(validUntil);
         if (validUntilDate < now) {
-            addStatus(result, createFailureStatus(IcaStatusCode.ValidUntilInvalid, label, 'Credential has expired'));
+            result.addError(ValidationStatusCode.IcaValidUntilInvalid, label, 'Credential has expired');
         }
     }
 }
@@ -506,17 +455,14 @@ function validateCredentialValidityDates(
 async function validateRevocationStatus(
     credential: IdentityClaimsAggregationCredential,
     label: string,
-    result: CawgValidationResult,
+    result: ValidationResult,
 ): Promise<void> {
     // Check credential status for revocation
     // Implementation would check bitstring status list or other mechanism
 
     if (credential.credentialStatus) {
         // Simplified check
-        addStatus(
-            result,
-            createSuccessStatus(IcaStatusCode.CredentialNotRevoked as any, label, 'Credential not revoked'),
-        );
+        result.addError(ValidationStatusCode.IcaCredentialNotRevoked, label, 'Credential not revoked');
     }
 }
 
@@ -524,15 +470,16 @@ function validateC2paAssetBinding(
     c2paAsset: C2paAssetBinding,
     signerPayload: SignerPayloadMap,
     label: string,
-    result: CawgValidationResult,
+    result: ValidationResult,
 ): void {
     // Convert and compare
     const convertedPayload = c2paAssetBindingToSignerPayload(c2paAsset);
 
     if (JSON.stringify(convertedPayload) !== JSON.stringify(signerPayload)) {
-        addStatus(
-            result,
-            createFailureStatus(IcaStatusCode.SignerPayloadMismatch, label, 'c2paAsset does not match signer_payload'),
+        result.addError(
+            ValidationStatusCode.IcaSignerPayloadMismatch,
+            label,
+            'c2paAsset does not match signer_payload',
         );
     }
 }
@@ -540,16 +487,13 @@ function validateC2paAssetBinding(
 function validateVerifiedIdentities(
     verifiedIdentities: VerifiedIdentity[],
     label: string,
-    result: CawgValidationResult,
+    result: ValidationResult,
 ): void {
     if (!verifiedIdentities || verifiedIdentities.length === 0) {
-        addStatus(
-            result,
-            createFailureStatus(
-                IcaStatusCode.VerifiedIdentitiesMissing,
-                label,
-                'verifiedIdentities array is empty or missing',
-            ),
+        result.addError(
+            ValidationStatusCode.IcaVerifiedIdentitiesMissing,
+            label,
+            'verifiedIdentities array is empty or missing',
         );
         return;
     }
@@ -557,13 +501,10 @@ function validateVerifiedIdentities(
     // Validate each verified identity entry
     for (const identity of verifiedIdentities) {
         if (!identity.type || !identity.provider || !identity.verifiedAt) {
-            addStatus(
-                result,
-                createFailureStatus(
-                    IcaStatusCode.VerifiedIdentitiesInvalid,
-                    label,
-                    'Verified identity missing required fields',
-                ),
+            result.addError(
+                ValidationStatusCode.IcaVerifiedIdentitiesInvalid,
+                label,
+                'Verified identity missing required fields',
             );
         }
     }

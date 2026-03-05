@@ -302,7 +302,10 @@ describe('Functional Identity Asset Reading Tests', function () {
 
                         assert.ok(
                             validationResult.statusEntries.some((entry: { code: any }) => entry.code === value),
-                            `missing status code ${value}`,
+                            `missing status code ${value}; actual codes: ${validationResult.statusEntries
+                                .filter((e: { success?: any }) => !e.success)
+                                .map((e: { code: any }) => e.code)
+                                .join(', ')}`,
                         );
                     });
                 });

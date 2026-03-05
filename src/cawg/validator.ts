@@ -54,11 +54,11 @@ export async function validateIdentityAssertion(
 
     // Step 3: Validate padding contains only zeros
     if (!validatePadding(assertion.pad1)) {
-        result.addError(ValidationStatusCode.PadInvalid, sourceBox, 'pad1 field contains non-zero bytes');
+        result.addError(ValidationStatusCode.IdentityPadInvalid, sourceBox, 'pad1 field contains non-zero bytes');
     }
 
     if (assertion.pad2 && !validatePadding(assertion.pad2)) {
-        result.addError(ValidationStatusCode.PadInvalid, sourceBox, 'pad2 field contains non-zero bytes');
+        result.addError(ValidationStatusCode.IdentityPadInvalid, sourceBox, 'pad2 field contains non-zero bytes');
     }
 
     // Step 4: Validate signer_payload structure
@@ -74,7 +74,7 @@ export async function validateIdentityAssertion(
     }
 
     if (!payload.sig_type) {
-        result.addError(ValidationStatusCode.SigTypeUnknown, sourceBox, 'signer_payload missing sig_type');
+        result.addError(ValidationStatusCode.IdentitySigTypeUnknown, sourceBox, 'signer_payload missing sig_type');
         return result;
     }
 
@@ -82,7 +82,7 @@ export async function validateIdentityAssertion(
     const duplicates = findDuplicateReferences(payload.referenced_assertions);
     if (duplicates.length > 0) {
         result.addError(
-            ValidationStatusCode.AssertionDuplicate,
+            ValidationStatusCode.IdentityAssertionDuplicate,
             sourceBox,
             `Found ${duplicates.length} duplicate assertion reference(s)`,
         );
@@ -136,7 +136,7 @@ async function validateReferencedAssertions(
 
         if (!found) {
             result.addError(
-                ValidationStatusCode.AssertionMismatch,
+                ValidationStatusCode.IdentityAssertionMismatch,
                 sourceBox,
                 `Referenced assertion not found in claim: ${ref.url}`,
             );
@@ -161,7 +161,11 @@ async function validateHardBindingReference(
     });
 
     if (hardBindingRefs.length === 0) {
-        result.addError(ValidationStatusCode.HardBindingMissing, sourceBox, 'No hard binding assertion referenced');
+        result.addError(
+            ValidationStatusCode.IdentityHardBindingMissing,
+            sourceBox,
+            'No hard binding assertion referenced',
+        );
     }
 
     // Verify it's the correct hard binding for this manifest
@@ -171,7 +175,11 @@ async function validateHardBindingReference(
 
     if (!expectedHardBinding) {
         // No hard binding found in claim
-        result.addError(ValidationStatusCode.HardBindingMissing, sourceBox, 'No hard binding assertion found in claim');
+        result.addError(
+            ValidationStatusCode.IdentityHardBindingMissing,
+            sourceBox,
+            'No hard binding assertion found in claim',
+        );
         return result;
     }
 
@@ -179,7 +187,7 @@ async function validateHardBindingReference(
 
     if (!correctRef) {
         result.addError(
-            ValidationStatusCode.HardBindingIncorrect,
+            ValidationStatusCode.IdentityHardBindingIncorrect,
             sourceBox,
             'Hard binding reference does not match the active manifest binding',
         );
@@ -220,14 +228,14 @@ async function validateExpectedPartialClaim(
         const expected = payload.expected_partial_claim.hash;
         if (!arrayEquals(computed, expected)) {
             result.addError(
-                ValidationStatusCode.ExpectedPartialClaimMismatch,
+                ValidationStatusCode.IdentityExpectedPartialClaimMismatch,
                 sourceBox,
                 'expected_partial_claim does not match computed value',
             );
         }
     } catch (error) {
         result.addError(
-            ValidationStatusCode.ExpectedPartialClaimMismatch,
+            ValidationStatusCode.IdentityExpectedPartialClaimMismatch,
             sourceBox,
             `Error validating expected_partial_claim: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -246,7 +254,7 @@ async function validateExpectedClaimGenerator(expected: HashMap, sourceBox: JUMB
 
         if (!certificate) {
             result.addError(
-                ValidationStatusCode.ExpectedClaimGeneratorMismatch,
+                ValidationStatusCode.IdentityExpectedClaimGeneratorMismatch,
                 sourceBox,
                 'Could not extract claim generator certificate from claim signature',
             );
@@ -258,14 +266,14 @@ async function validateExpectedClaimGenerator(expected: HashMap, sourceBox: JUMB
 
         if (!arrayEquals(computed, expected.hash)) {
             result.addError(
-                ValidationStatusCode.ExpectedClaimGeneratorMismatch,
+                ValidationStatusCode.IdentityExpectedClaimGeneratorMismatch,
                 sourceBox,
                 'expected_claim_generator does not match computed hash of claim generator certificate',
             );
         }
     } catch (error) {
         result.addError(
-            ValidationStatusCode.ExpectedClaimGeneratorMismatch,
+            ValidationStatusCode.IdentityExpectedClaimGeneratorMismatch,
             sourceBox,
             `Error validating expected_claim_generator: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -296,7 +304,7 @@ async function validateExpectedCountersigners(
 
         if (!matchingEntry) {
             result.addError(
-                ValidationStatusCode.UnexpectedCountersigner,
+                ValidationStatusCode.IdentityUnexpectedCountersigner,
                 sourceBox,
                 `Found identity assertion not described in expected_countersigners`,
             );
@@ -312,7 +320,7 @@ async function validateExpectedCountersigners(
 
             if (!credentialMatch) {
                 result.addError(
-                    ValidationStatusCode.ExpectedCountersignerMismatch,
+                    ValidationStatusCode.IdentityExpectedCountersignerMismatch,
                     sourceBox,
                     'Countersigner credentials do not match expected value',
                 );
@@ -323,7 +331,7 @@ async function validateExpectedCountersigners(
     // Check if any expected countersigners are missing
     if (otherIdentityAssertions.length < expectedCountersigners.length) {
         result.addError(
-            ValidationStatusCode.ExpectedCountersignerMissing,
+            ValidationStatusCode.IdentityExpectedCountersignerMissing,
             sourceBox,
             'Expected identity assertion is missing from manifest',
         );

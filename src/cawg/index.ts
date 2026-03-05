@@ -47,10 +47,6 @@
 
 // Type definitions
 export * from './types.js';
-
-// Status codes and validation results
-export * from './status-codes.js';
-
 // Utility functions
 export * from './utils.js';
 

@@ -8,6 +8,7 @@
  * @module cawg/x509-cose
  */
 
+import * as JUMBF from '../jumbf';
 import { ValidationStatusCode } from '../manifest/types.js';
 import { ValidationResult } from '../manifest/ValidationResult.js';
 import { CawgTrustConfiguration, SignerPayloadMap, TrustDecision } from './types.js';
@@ -127,7 +128,7 @@ export async function validateCoseSignature(
         const certificates = extractCertificates(coseSign1);
         if (certificates.length === 0) {
             result.addError(
-                ValidationStatusCode.CredentialRevoked,
+                ValidationStatusCode.IcaCredentialRevoked,
                 sourceBox,
                 'No certificates found in COSE signature',
             );
@@ -140,7 +141,11 @@ export async function validateCoseSignature(
         const chainValid = await verifyCertificateChain(certificates, trustConfig.trustAnchors, validationTime);
 
         if (!chainValid) {
-            result.addError(ValidationStatusCode.CredentialRevoked, sourceBox, 'Certificate chain validation failed');
+            result.addError(
+                ValidationStatusCode.IcaCredentialRevoked,
+                sourceBox,
+                'Certificate chain validation failed',
+            );
             return result;
         }
 
@@ -149,7 +154,7 @@ export async function validateCoseSignature(
 
         if (!ekuValid) {
             result.addError(
-                ValidationStatusCode.CredentialRevoked,
+                ValidationStatusCode.IcaCredentialRevoked,
                 sourceBox,
                 'Certificate does not have required Extended Key Usage',
             );
@@ -166,7 +171,7 @@ export async function validateCoseSignature(
 
                 if (!policyValid) {
                     result.addError(
-                        ValidationStatusCode.CredentialRevoked,
+                        ValidationStatusCode.IcaCredentialRevoked,
                         sourceBox,
                         `Certificate does not have required policy for EKU ${eku}`,
                     );
@@ -179,7 +184,7 @@ export async function validateCoseSignature(
         const signatureValid = await verifyCoseSignature(coseSign1, serialized, endEntityCert);
 
         if (!signatureValid) {
-            result.addError(ValidationStatusCode.CredentialRevoked, sourceBox, 'COSE signature verification failed');
+            result.addError(ValidationStatusCode.IcaCredentialRevoked, sourceBox, 'COSE signature verification failed');
             return result;
         }
 
@@ -195,7 +200,7 @@ export async function validateCoseSignature(
                 );
             } else {
                 result.addError(
-                    ValidationStatusCode.TimestampInvalid,
+                    ValidationStatusCode.IcaTimeStampInvalid,
                     sourceBox,
                     'RFC 3161 timestamp validation failed',
                 );
@@ -203,7 +208,7 @@ export async function validateCoseSignature(
         } else if (timestamp?.version === 1) {
             // v1 timestamps are not allowed
             result.addError(
-                ValidationStatusCode.TimestampInvalid,
+                ValidationStatusCode.IcaTimeStampInvalid,
                 sourceBox,
                 'v1 timestamps are not allowed in identity assertions',
             );
@@ -213,7 +218,7 @@ export async function validateCoseSignature(
         const revoked = await checkRevocationStatus(endEntityCert, coseSign1, validationTime);
 
         if (revoked) {
-            result.addError(ValidationStatusCode.CredentialRevoked, sourceBox, 'Certificate was revoked');
+            result.addError(ValidationStatusCode.IcaCredentialRevoked, sourceBox, 'Certificate was revoked');
             return result;
         }
 
@@ -236,7 +241,7 @@ export async function validateCoseSignature(
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
 
-        result.addError(ValidationStatusCode.ValidationError, sourceBox, `Validation error: ${errorMessage}`);
+        result.addError(ValidationStatusCode.GeneralError, sourceBox, `Validation error: ${errorMessage}`);
     }
 
     return result;

@@ -181,4 +181,12 @@ export class AssertionStore implements ManifestComponent {
             (a): a is IngredientAssertion => a instanceof IngredientAssertion && a.relationship === relationship,
         );
     }
+
+    /**
+     * Gets all identity assertions from the store
+     * @returns Array of IdentityAssertion objects
+     */
+    public getIdentityAssertions() {
+        return this.assertions.filter(assertion => assertion instanceof IdentityAssertion);
+    }
 }

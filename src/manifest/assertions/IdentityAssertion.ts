@@ -155,6 +155,8 @@ export class IdentityAssertion extends Assertion {
     }
 
     public override async validate(manifest: Manifest): Promise<ValidationResult> {
+        const result = await super.validate(manifest);
+
         if (!this.sourceBox) {
             throw new ValidationError(
                 ValidationStatusCode.AssertionCBORInvalid,
@@ -162,7 +164,8 @@ export class IdentityAssertion extends Assertion {
                 'Identity assertion is missing source box reference',
             );
         }
-        return validateIdentityAssertion(this, this.label, this.sourceBox);
+        result.merge(await validateIdentityAssertion(this, this.label, this.sourceBox));
+        return result;
     }
 
     /**

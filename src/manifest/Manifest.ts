@@ -318,6 +318,9 @@ export class Manifest implements ManifestComponent {
         result.merge(await this.validateManifestRelationships());
         result.merge(await this.validateIngredients());
 
+        // TODO: Move to correct location in multistep validation process
+        result.merge(await this.validateIdentityAssertions());
+
         return result;
     }
 
@@ -610,6 +613,21 @@ export class Manifest implements ManifestComponent {
                 assertionReference.uri,
                 'Standard manifest must contain either c2pa.created or c2pa.opened action',
             );
+        }
+        return result;
+    }
+
+    /**
+     * Validates identity assertions on a manifest
+     * @returns ValidationResult containing any validation errors or successes
+     */
+    private async validateIdentityAssertions(): Promise<ValidationResult> {
+        const result = new ValidationResult();
+
+        // Check for identity  assertions
+        const identityAssertions = this.assertions?.getIdentityAssertions() ?? [];
+        for (const assertion of identityAssertions) {
+            result.merge(await assertion.validate(this));
         }
         return result;
     }
