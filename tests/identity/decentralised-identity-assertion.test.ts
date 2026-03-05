@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, expect, it } from 'bun:test';
-import { DecentralisedIdentityAssertion } from '../src/manifest/assertions/DecentralisedIdentityAssertion';
-import type { DIDDocument, DIDResolutionResult } from '../src/manifest/assertions/DecentralisedIdentityAssertion';
+import { DecentralisedIdentityAssertion } from '../../src/manifest/assertions/DecentralisedIdentityAssertion';
+import type { DIDDocument, DIDResolutionResult } from '../../src/manifest/assertions/DecentralisedIdentityAssertion';
 
 describe('DecentralisedIdentityAssertion', () => {
     const mockDIDWebDocument: DIDDocument = {
