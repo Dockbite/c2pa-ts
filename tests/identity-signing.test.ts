@@ -61,7 +61,7 @@ describe('Identity Assertion Signing Tests', function () {
                         {
                             url: `self#jumbf=c2pa.assertions/c2pa.hash.data`,
                             alg: 'SHA-256',
-                            hash: new Uint8Array(32).fill(0), //new Uint8Array([ 86, 223, 145, 128, 77, 182, 43, 147, 97, 1, 171, 0, 65, 143, 91, 140, 253, 192, 120, 131, 101, 185, 56, 87, 70, 245, 27, 148, 6, 135, 224, 248 ])
+                            hash: new Uint8Array(32).fill(0x00),
                         },
                     ],
                     'cawg.x509.cose',
@@ -96,7 +96,7 @@ describe('Identity Assertion Signing Tests', function () {
 
                 // Set signature and padding (in real implementation, this would be a proper COSE signature)
                 // For testing purposes, we'll use placeholder values
-                // identityAssertion.setSignature(new Uint8Array(64).fill(0xab), new Uint8Array(256).fill(0x01));
+                identityAssertion.setSignature(new Uint8Array(64).fill(0xaa), new Uint8Array(256).fill(0x00));
 
                 // Create the manifest signature
                 await manifest.sign(signer, timestampProvider);
