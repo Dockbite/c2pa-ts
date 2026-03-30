@@ -16,6 +16,7 @@ import type {
     IdentityClaimsAggregationCredential,
     IdentityClaimsCredentialSubject,
     SignerPayloadMap,
+    VerifiableCredential,
     VerifiedIdentity,
 } from './types.js';
 import { c2paAssetBindingToSignerPayload, signerPayloadToC2paAssetBinding } from './utils.js';
@@ -95,13 +96,13 @@ export function createIcaCredential(
         useVc2?: boolean;
         credentialStatus?: any;
     },
-): IdentityClaimsAggregationCredential {
+): VerifiableCredential {
     const useVc2 = options?.useVc2 ?? true;
 
     // Convert signer_payload to C2PA asset binding format
     const c2paAssetBinding = signerPayloadToC2paAssetBinding(signerPayload);
 
-    const credential: IdentityClaimsAggregationCredential = {
+    const credential: VerifiableCredential = {
         '@context': [useVc2 ? VC_CONTEXT.V2_0 : VC_CONTEXT.V1_1, VC_CONTEXT.CAWG],
         type: [VC_TYPE.Verifiable, VC_TYPE.IdentityClaimsAggregation],
         issuer,

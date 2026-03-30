@@ -196,9 +196,9 @@ export interface IdentityClaimsCredentialSubject {
 }
 
 /**
- * Identity claims aggregation verifiable credential
+ * Base for Identity claims aggregation verifiable credential (ICA-VC) and Verifiable Credential (VC)
  */
-export interface IdentityClaimsAggregationCredential {
+export interface VerifiableCredentialBase {
     /** JSON-LD context */
     '@context': string[];
     /** Credential types */
@@ -222,6 +222,22 @@ export interface IdentityClaimsAggregationCredential {
         id: string;
         type: string;
     }[];
+}
+
+/**
+ * Verifiable Credential
+ */
+export interface VerifiableCredential extends VerifiableCredentialBase {
+    /** Credential subject */
+    credentialSubject: IdentityClaimsCredentialSubject;
+}
+
+/**
+ * Identity claims aggregation verifiable credential
+ */
+export interface IdentityClaimsAggregationCredential extends VerifiableCredentialBase {
+    /** Array of verified identities */
+    verifiedIdentities: VerifiedIdentity[];
 }
 
 /**
