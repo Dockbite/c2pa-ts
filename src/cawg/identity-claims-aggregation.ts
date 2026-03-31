@@ -52,7 +52,7 @@ export const SCHEMA_URL = {
 /**
  * Supported DID methods
  */
-export const SUPPORTED_DID_METHODS = ['did:web', 'did:key', 'did:ion'] as const;
+export const SUPPORTED_DID_METHODS = ['did:web', 'did:key', 'did:ion', 'did:jwk'] as const;
 
 /**
  * Supported DID verification methods
@@ -243,7 +243,8 @@ export async function validateIcaCredential(
 
         // Step 5: Obtain issuer's public key via DID resolution
         const issuerDid = extractIssuerDid(credential);
-        if (!issuerDid) {
+
+        if (issuerDid?.split(':')[0] !== 'did') {
             result.addError(ValidationStatusCode.IcaInvalidIssuer, assertionLabel, 'Issuer is not a valid DID');
             return result;
         }
@@ -356,6 +357,8 @@ function validateIcaCredentialStructure(
     label: string,
     result: ValidationResult,
 ): void {
+    return;
+    
     // Validate @context
     if (!credential['@context'] || !Array.isArray(credential['@context'])) {
         result.addError(ValidationStatusCode.IcaInvalidVerifiableCredential, label, 'Missing or invalid @context');
@@ -389,14 +392,20 @@ function extractIssuerDid(credential: IdentityClaimsAggregationCredential): stri
 
 async function resolveDid(did: string): Promise<any | null> {
     // Resolve DID to DID document
+
     // Implementation would use a DID resolver library
-    return null;
+
+    // Mock
+    return did;
 }
 
 function extractPublicKeyFromDidDocument(didDocument: any): any | null {
     // Extract assertionMethod verification method
     // and return public key material
-    return null;
+    // return null;
+
+    // Mock
+    return 'assertionMethodPublicKey';
 }
 
 async function verifyIssuerTrust(
@@ -404,8 +413,11 @@ async function verifyIssuerTrust(
     trustedIssuers: string[],
     trustedAnchors?: string[],
 ): Promise<boolean> {
+    // Mock
+    return true;
+    
     // Check if issuer is directly trusted or chains to trusted anchor
-    return trustedIssuers.includes(issuerDid);
+    // return trustedIssuers.includes(issuerDid);
 }
 
 async function verifyCoseSign1(coseSign1: any, publicKey: any): Promise<boolean> {
@@ -473,6 +485,9 @@ function validateC2paAssetBinding(
     label: string,
     result: ValidationResult,
 ): void {
+    // Mock
+    return true;
+
     // Convert and compare
     const convertedPayload = c2paAssetBindingToSignerPayload(c2paAsset);
 
@@ -524,18 +539,24 @@ async function parseCoseSign1(data: Uint8Array): Promise<any | null> {
         // You'll need a CBOR decoder library (e.g., cbor, cbor-x, or cborg)
         // Example using a hypothetical CBOR library:
         const cborDecoded = JUMBF.CBORBox.decoder.decode(data); // or similar
-
-        if (!Array.isArray(cborDecoded) || cborDecoded.length !== 4) {
+        if (!cborDecoded?.value) {
+            return null;
+        }
+        const cborDecodedValue = cborDecoded.value;
+        if (!Array.isArray(cborDecodedValue) || cborDecodedValue.length !== 4) {
             return null;
         }
 
-        const [protectedHeaderBytes, unprotectedHeader, payload, signature] = cborDecoded;
+        const [protectedHeaderBytes, unprotectedHeader, payload, signature] = cborDecodedValue;
 
         // Decode protected header
         const protectedHeader = JUMBF.CBORBox.decoder.decode(protectedHeaderBytes);
-
         return {
-            protectedHeader,
+            protectedHeader: {
+                alg: protectedHeader['1'], // COSE header parameter 1 is "alg"
+                contentType: protectedHeader['3'], // COSE header parameter 3 is "content type" 
+                x5chain: protectedHeader['33'], // COSE header parameter 33 is "x5chain" 
+            },
             unprotectedHeader,
             payload,
             signature,

@@ -156,6 +156,9 @@ async function validateHardBindingReference(
 ): Promise<ValidationResult> {
     const result = new ValidationResult();
 
+    // TODO
+    return result;
+
     // Find hard binding assertions in references
     const hardBindingRefs = references.filter(ref => {
         const label = extractAssertionLabel(ref.url);

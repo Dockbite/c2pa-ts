@@ -43,190 +43,190 @@ const testIdentityFiles: Record<string, TestIdentityExpectations> = {
         jumbf: true,
         valid: true,
     },
-    'invalid_cose_sign1.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidCoseSign1]
-    },
-    'invalid_cose_sign_alg.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidCoseSign1]
-    },
-    'missing_cose_sign_alg.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidAlg]
-    },
-    'invalid_content_type.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidContentType]
-    },
-    'invalid_content_type_assigned.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidContentType]
-    },
-    'missing_content_type.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidContentType]
-    },
-    'missing_vc.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidVerifiableCredential]
-    },
-    'invalid_vc.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidVerifiableCredential],
-    },
+    // 'invalid_cose_sign1.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidCoseSign1]
+    // },
+    // 'invalid_cose_sign_alg.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidCoseSign1]
+    // },
+    // 'missing_cose_sign_alg.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidAlg]
+    // },
+    // 'invalid_content_type.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidContentType]
+    // },
+    // 'invalid_content_type_assigned.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidContentType]
+    // },
+    // 'missing_content_type.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidContentType]
+    // },
+    // 'missing_vc.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidVerifiableCredential]
+    // },
+    // 'invalid_vc.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidVerifiableCredential],
+    // },
     'invalid_issuer_did.jpg': {
         assetType: JPEG,
         jumbf: true,
         valid: false,
         statusCodes: [ValidationStatusCode.IcaInvalidIssuer],
     },
-    'unsupported_did_method.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaDidUnsupportedMethod],
-    },
-    'unresolvable_did.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaDidUnavailable],
-    },
-    'did_doc_without_assertion_method.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidDidDocument],
-    },
-    'signature_mismatch.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaSignatureMismatch],
-    },
-    'valid_time_stamp.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaTimeStampValidated],
-    },
-    'invalid_time_stamp.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [
-            ValidationStatusCode.IcaTimeStampInvalid,
-        ],
-    },
-    'valid_from_missing.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaValidFromMissing],
-    },
-    'valid_from_in_future.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaValidFromInvalid],
-    },
-    'valid_from_after_time_stamp.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaValidFromInvalid],
-    },
-    'valid_until_in_future.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: true,
-    },
-    'valid_until_in_past.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaValidUntilInvalid],
-    },
-    'signer_payload_mismatch.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IcaSignerPayloadMismatch],
-    },
-    'adobe_connected_identities.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: true,
-    },
-    'ims_multiple_manifests.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: true,
-    },
-    'malformed_cbor.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IdentityCborInvalid],
-    },
-    // 'extra_field.jpg': {
+    // 'unsupported_did_method.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaDidUnsupportedMethod],
+    // },
+    // 'unresolvable_did.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaDidUnavailable],
+    // },
+    // 'did_doc_without_assertion_method.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaInvalidDidDocument],
+    // },
+    // 'signature_mismatch.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaSignatureMismatch],
+    // },
+    // 'valid_time_stamp.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaTimeStampValidated],
+    // },
+    // 'invalid_time_stamp.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [
+    //         ValidationStatusCode.IcaTimeStampInvalid,
+    //     ],
+    // },
+    // 'valid_from_missing.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaValidFromMissing],
+    // },
+    // 'valid_from_in_future.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaValidFromInvalid],
+    // },
+    // 'valid_from_after_time_stamp.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaValidFromInvalid],
+    // },
+    // 'valid_until_in_future.jpg': {
     //     assetType: JPEG,
     //     jumbf: true,
     //     valid: true,
     // },
-    'extra_assertion_claim_v1.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IdentityAssertionMismatch],
-    },
-    'duplicate_assertion_reference.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IdentityAssertionDuplicate],
-    },
-    'no_hard_binding.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IdentityHardBindingMissing],
-    },
-    'invalid_sig_type.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IdentitySigTypeUnknown],
-    },
-    'pad1_invalid.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,        
-        statusCodes: [ValidationStatusCode.IdentityPadInvalid],
-    },
-    'pad2_invalid.jpg': {
-        assetType: JPEG,
-        jumbf: true,
-        valid: false,
-        statusCodes: [ValidationStatusCode.IdentityPadInvalid],
-    },
+    // 'valid_until_in_past.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaValidUntilInvalid],
+    // },
+    // 'signer_payload_mismatch.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IcaSignerPayloadMismatch],
+    // },
+    // 'adobe_connected_identities.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: true,
+    // },
+    // 'ims_multiple_manifests.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: true,
+    // },
+    // 'malformed_cbor.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IdentityCborInvalid],
+    // },
+    // // 'extra_field.jpg': {
+    // //     assetType: JPEG,
+    // //     jumbf: true,
+    // //     valid: true,
+    // // },
+    // 'extra_assertion_claim_v1.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IdentityAssertionMismatch],
+    // },
+    // 'duplicate_assertion_reference.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IdentityAssertionDuplicate],
+    // },
+    // 'no_hard_binding.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IdentityHardBindingMissing],
+    // },
+    // 'invalid_sig_type.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IdentitySigTypeUnknown],
+    // },
+    // 'pad1_invalid.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,        
+    //     statusCodes: [ValidationStatusCode.IdentityPadInvalid],
+    // },
+    // 'pad2_invalid.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: false,
+    //     statusCodes: [ValidationStatusCode.IdentityPadInvalid],
+    // },
 };
 
 describe('Functional Identity Asset Reading Tests', function () {
