@@ -97,12 +97,12 @@ const testIdentityFiles: Record<string, TestIdentityExpectations> = {
         valid: false,
         statusCodes: [ValidationStatusCode.IcaInvalidIssuer],
     },
-    // 'unsupported_did_method.jpg': {
-    //     assetType: JPEG,
-    //     jumbf: true,
-    //     valid: false,
-    //     statusCodes: [ValidationStatusCode.IcaDidUnsupportedMethod],
-    // },
+    'unsupported_did_method.jpg': {
+        assetType: JPEG,
+        jumbf: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.IcaDidUnsupportedMethod],
+    },
     // 'unresolvable_did.jpg': {
     //     assetType: JPEG,
     //     jumbf: true,
@@ -186,11 +186,11 @@ const testIdentityFiles: Record<string, TestIdentityExpectations> = {
     //     valid: false,
     //     statusCodes: [ValidationStatusCode.IdentityCborInvalid],
     // },
-    // // 'extra_field.jpg': {
-    // //     assetType: JPEG,
-    // //     jumbf: true,
-    // //     valid: true,
-    // // },
+    // 'extra_field.jpg': {
+    //     assetType: JPEG,
+    //     jumbf: true,
+    //     valid: true,
+    // },
     // 'extra_assertion_claim_v1.jpg': {
     //     assetType: JPEG,
     //     jumbf: true,

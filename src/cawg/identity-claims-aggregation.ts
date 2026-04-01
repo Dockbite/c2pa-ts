@@ -357,8 +357,6 @@ function validateIcaCredentialStructure(
     label: string,
     result: ValidationResult,
 ): void {
-    return;
-    
     // Validate @context
     if (!credential['@context'] || !Array.isArray(credential['@context'])) {
         result.addError(ValidationStatusCode.IcaInvalidVerifiableCredential, label, 'Missing or invalid @context');
@@ -490,7 +488,6 @@ function validateC2paAssetBinding(
 
     // Convert and compare
     const convertedPayload = c2paAssetBindingToSignerPayload(c2paAsset);
-
     if (JSON.stringify(convertedPayload) !== JSON.stringify(signerPayload)) {
         result.addError(
             ValidationStatusCode.IcaSignerPayloadMismatch,
