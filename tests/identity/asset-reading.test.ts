@@ -1,9 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import { describe, it } from 'bun:test';
@@ -47,43 +41,43 @@ const testIdentityFiles: Record<string, TestIdentityExpectations> = {
         assetType: JPEG,
         jumbf: true,
         valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidCoseSign1]
+        statusCodes: [ValidationStatusCode.IcaInvalidCoseSign1],
     },
     'invalid_cose_sign_alg.jpg': {
         assetType: JPEG,
         jumbf: true,
         valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidAlg]
+        statusCodes: [ValidationStatusCode.IcaInvalidAlg],
     },
     'missing_cose_sign_alg.jpg': {
         assetType: JPEG,
         jumbf: true,
         valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidAlg]
+        statusCodes: [ValidationStatusCode.IcaInvalidAlg],
     },
     'invalid_content_type.jpg': {
         assetType: JPEG,
         jumbf: true,
         valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidContentType]
+        statusCodes: [ValidationStatusCode.IcaInvalidContentType],
     },
     'invalid_content_type_assigned.jpg': {
         assetType: JPEG,
         jumbf: true,
         valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidContentType]
+        statusCodes: [ValidationStatusCode.IcaInvalidContentType],
     },
     'missing_content_type.jpg': {
         assetType: JPEG,
         jumbf: true,
         valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidContentType]
+        statusCodes: [ValidationStatusCode.IcaInvalidContentType],
     },
     'missing_vc.jpg': {
         assetType: JPEG,
         jumbf: true,
         valid: false,
-        statusCodes: [ValidationStatusCode.IcaInvalidVerifiableCredential]
+        statusCodes: [ValidationStatusCode.IcaInvalidVerifiableCredential],
     },
     'invalid_vc.jpg': {
         assetType: JPEG,
@@ -103,18 +97,18 @@ const testIdentityFiles: Record<string, TestIdentityExpectations> = {
         valid: false,
         statusCodes: [ValidationStatusCode.IcaDidUnsupportedMethod],
     },
-    // 'unresolvable_did.jpg': {
-    //     assetType: JPEG,
-    //     jumbf: true,
-    //     valid: false,
-    //     statusCodes: [ValidationStatusCode.IcaDidUnavailable],
-    // },
-    // 'did_doc_without_assertion_method.jpg': {
-    //     assetType: JPEG,
-    //     jumbf: true,
-    //     valid: false,
-    //     statusCodes: [ValidationStatusCode.IcaInvalidDidDocument],
-    // },
+    'unresolvable_did.jpg': {
+        assetType: JPEG,
+        jumbf: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.IcaDidUnavailable],
+    },
+    'did_doc_without_assertion_method.jpg': {
+        assetType: JPEG,
+        jumbf: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.IcaInvalidDidDocument],
+    },
     // 'signature_mismatch.jpg': {
     //     assetType: JPEG,
     //     jumbf: true,
@@ -135,18 +129,18 @@ const testIdentityFiles: Record<string, TestIdentityExpectations> = {
     //         ValidationStatusCode.IcaTimeStampInvalid,
     //     ],
     // },
-    // 'valid_from_missing.jpg': {
-    //     assetType: JPEG,
-    //     jumbf: true,
-    //     valid: false,
-    //     statusCodes: [ValidationStatusCode.IcaValidFromMissing],
-    // },
-    // 'valid_from_in_future.jpg': {
-    //     assetType: JPEG,
-    //     jumbf: true,
-    //     valid: false,
-    //     statusCodes: [ValidationStatusCode.IcaValidFromInvalid],
-    // },
+    'valid_from_missing.jpg': {
+        assetType: JPEG,
+        jumbf: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.IcaValidFromMissing],
+    },
+    'valid_from_in_future.jpg': {
+        assetType: JPEG,
+        jumbf: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.IcaValidFromInvalid],
+    },
     // 'valid_from_after_time_stamp.jpg': {
     //     assetType: JPEG,
     //     jumbf: true,
@@ -197,12 +191,12 @@ const testIdentityFiles: Record<string, TestIdentityExpectations> = {
     //     valid: false,
     //     statusCodes: [ValidationStatusCode.IdentityAssertionMismatch],
     // },
-    // 'duplicate_assertion_reference.jpg': {
-    //     assetType: JPEG,
-    //     jumbf: true,
-    //     valid: false,
-    //     statusCodes: [ValidationStatusCode.IdentityAssertionDuplicate],
-    // },
+    'duplicate_assertion_reference.jpg': {
+        assetType: JPEG,
+        jumbf: true,
+        valid: false,
+        statusCodes: [ValidationStatusCode.IdentityAssertionDuplicate],
+    },
     // 'no_hard_binding.jpg': {
     //     assetType: JPEG,
     //     jumbf: true,
@@ -218,14 +212,22 @@ const testIdentityFiles: Record<string, TestIdentityExpectations> = {
     'pad1_invalid.jpg': {
         assetType: JPEG,
         jumbf: true,
-        valid: false,        
-        statusCodes: [ValidationStatusCode.IdentityPadInvalid, ValidationStatusCode.IcaInvalidContentType, ValidationStatusCode.IcaInvalidContentType],
+        valid: false,
+        statusCodes: [
+            ValidationStatusCode.IdentityPadInvalid,
+            ValidationStatusCode.IcaInvalidContentType,
+            ValidationStatusCode.IcaInvalidContentType,
+        ],
     },
     'pad2_invalid.jpg': {
         assetType: JPEG,
         jumbf: true,
         valid: false,
-        statusCodes: [ValidationStatusCode.IdentityPadInvalid, ValidationStatusCode.IcaInvalidContentType, ValidationStatusCode.IcaInvalidContentType],
+        statusCodes: [
+            ValidationStatusCode.IdentityPadInvalid,
+            ValidationStatusCode.IcaInvalidContentType,
+            ValidationStatusCode.IcaInvalidContentType,
+        ],
     },
 };
 
@@ -289,8 +291,8 @@ describe('Functional Identity Asset Reading Tests', function () {
                     const message =
                         data.valid ?
                             `Manifest should be valid but is not (status codes: ${validationResult.statusEntries
-                                .filter((e: { success?: any }) => !e.success)
-                                .map((e: { code: any }) => e.code)
+                                .filter((e: { success?: boolean }) => !e.success)
+                                .map((e: { code: ValidationStatusCode }) => e.code)
                                 .join(', ')})`
                         :   'Manifest is valid but should not be';
                     assert.equal(validationResult.isValid, data.valid, message);
@@ -301,10 +303,12 @@ describe('Functional Identity Asset Reading Tests', function () {
                         if (validationResult === undefined) return;
 
                         assert.ok(
-                            validationResult.statusEntries.some((entry: { code: any }) => entry.code === value),
+                            validationResult.statusEntries.some(
+                                (entry: { code: ValidationStatusCode }) => entry.code === value,
+                            ),
                             `missing status code ${value}; actual codes: ${validationResult.statusEntries
-                                .filter((e: { success?: any }) => !e.success)
-                                .map((e: { code: any }) => e.code)
+                                .filter((e: { success?: boolean }) => !e.success)
+                                .map((e: { code: ValidationStatusCode }) => e.code)
                                 .join(', ')}`,
                         );
                     });

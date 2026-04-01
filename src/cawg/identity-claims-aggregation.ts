@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /**
  * CAWG Identity Claims Aggregation Support
  * Implementation of ICA verifiable credentials per CAWG spec Section 8.1
@@ -9,12 +5,19 @@
  * @module cawg/identity-claims-aggregation
  */
 
+import { DIDDocument, VerificationMethod } from 'did-resolver';
 import * as JUMBF from '../jumbf';
 import { ValidationResult, ValidationStatusCode } from '../manifest';
+import { didResolver } from './did-resolver';
 import type {
     C2paAssetBinding,
+    CredentialStatus,
+    DecodedCoseSign1,
+    DecodedCoseSign1Typing,
+    DIDPublicKey,
     IdentityClaimsAggregationCredential,
     IdentityClaimsCredentialSubject,
+    ProtectedHeaderMap,
     SignerPayloadMap,
     VerifiableCredential,
     VerifiedIdentity,
@@ -94,7 +97,7 @@ export function createIcaCredential(
     options?: {
         validUntil?: Date;
         useVc2?: boolean;
-        credentialStatus?: any;
+        credentialStatus?: CredentialStatus;
     },
 ): VerifiableCredential {
     const useVc2 = options?.useVc2 ?? true;
@@ -227,8 +230,16 @@ export async function validateIcaCredential(
         let credential: IdentityClaimsAggregationCredential;
 
         try {
+            if (!coseSign1.payload) {
+                result.addError(
+                    ValidationStatusCode.IcaInvalidVerifiableCredential,
+                    assertionLabel,
+                    'COSE_Sign1 payload is empty',
+                );
+                return result;
+            }
             const credentialJson = new TextDecoder().decode(coseSign1.payload);
-            credential = JSON.parse(credentialJson);
+            credential = JSON.parse(credentialJson) as IdentityClaimsAggregationCredential;
         } catch {
             result.addError(
                 ValidationStatusCode.IcaInvalidVerifiableCredential,
@@ -250,7 +261,7 @@ export async function validateIcaCredential(
         }
 
         const didMethod = issuerDid.split(':')[1];
-        if (!SUPPORTED_DID_METHODS.includes(`did:${didMethod}` as any)) {
+        if (!(SUPPORTED_DID_METHODS as readonly string[]).includes(`did:${didMethod}`)) {
             result.addError(
                 ValidationStatusCode.IcaDidUnsupportedMethod,
                 assertionLabel,
@@ -265,6 +276,7 @@ export async function validateIcaCredential(
         }
 
         const publicKey = extractPublicKeyFromDidDocument(didDocument);
+
         if (!publicKey) {
             result.addError(
                 ValidationStatusCode.IcaInvalidDidDocument,
@@ -303,7 +315,7 @@ export async function validateIcaCredential(
             const timestampValid = await validateTimestamp(timestamp);
             if (timestampValid) {
                 result.addInformational(
-                    ValidationStatusCode.IcaTimeStampValidated as any,
+                    ValidationStatusCode.IcaTimeStampValidated,
                     assertionLabel,
                     'RFC 3161 timestamp validated',
                 );
@@ -329,14 +341,14 @@ export async function validateIcaCredential(
         // Step 13: Final status
         if (result.isValid) {
             result.addInformational(
-                ValidationStatusCode.IcaCredentialValid as any,
+                ValidationStatusCode.IcaCredentialValid,
                 assertionLabel,
                 'Identity claims aggregation credential is valid',
             );
         }
     } catch (error) {
-        console.error('Error during ICA credential validation:');
-        console.error(error);
+        // console.error('Error during ICA credential validation:');
+        // console.error(error);
         result.addError(
             ValidationStatusCode.IcaInvalidVerifiableCredential,
             assertionLabel,
@@ -348,7 +360,6 @@ export async function validateIcaCredential(
 }
 
 // Helper functions
-
 function validateCoseAlgorithm(alg: number | undefined): boolean {
     if (alg === undefined) return false;
     return (Object.values(SUPPORTED_COSE_ALGORITHMS) as number[]).includes(alg);
@@ -390,22 +401,39 @@ function extractIssuerDid(credential: IdentityClaimsAggregationCredential): stri
     return null;
 }
 
-async function resolveDid(did: string): Promise<any | null> {
-    // Resolve DID to DID document
-
-    // Implementation would use a DID resolver library
-
-    // Mock
-    return did;
+async function resolveDid(did: string): Promise<DIDDocument | null> {
+    const res = await didResolver.resolve(did);
+    return res.didDocument;
 }
 
-function extractPublicKeyFromDidDocument(didDocument: any): any | null {
+function extractPublicKeyFromDidDocument(didDocument: DIDDocument): DIDPublicKey | null {
     // Extract assertionMethod verification method
     // and return public key material
-    // return null;
+    const verificationMethods = didDocument.verificationMethod ?? [];
 
-    // Mock
-    return 'assertionMethodPublicKey';
+    // Look for assertionMethod entries
+    const assertionMethods = didDocument.assertionMethod ?? [];
+
+    for (const methodId of assertionMethods) {
+        const method = verificationMethods.find(
+            (vm: VerificationMethod) => vm.id === methodId || vm.id === `${didDocument.id}${methodId as string}`,
+        );
+
+        if (!method) continue;
+
+        // Check if verification method type is supported
+        if (!(SUPPORTED_VERIFICATION_METHODS as readonly string[]).includes(method.type)) {
+            continue;
+        }
+
+        // Extract public key based on method type
+        if (method.type === 'JsonWebKey2020' && method.publicKeyJwk) {
+            return method.publicKeyJwk;
+        } else if (method.publicKeyMultibase) {
+            return method.publicKeyMultibase;
+        }
+    }
+    return null;
 }
 
 async function verifyIssuerTrust(
@@ -415,22 +443,23 @@ async function verifyIssuerTrust(
 ): Promise<boolean> {
     // Mock
     return true;
-    
     // Check if issuer is directly trusted or chains to trusted anchor
     // return trustedIssuers.includes(issuerDid);
 }
 
-async function verifyCoseSign1(coseSign1: any, publicKey: any): Promise<boolean> {
+async function verifyCoseSign1(coseSign1: DecodedCoseSign1, publicKey: DIDPublicKey): Promise<boolean> {
+    // console.error(coseSign1)
+    // console.error(publicKey)
     // Verify COSE_Sign1 signature using public key
     return true;
 }
 
-function extractTimestamp(coseSign1: any): any | null {
+function extractTimestamp(coseSign1: DecodedCoseSign1): unknown | null {
     // Extract RFC 3161 timestamp from sigTst2 unprotected header
     return null;
 }
 
-async function validateTimestamp(timestamp: any): Promise<boolean> {
+async function validateTimestamp(timestamp: unknown): Promise<boolean> {
     // Validate RFC 3161 timestamp
     return true;
 }
@@ -485,8 +514,8 @@ function validateC2paAssetBinding(
     label: string,
     result: ValidationResult,
 ): void {
-    // Mock
-    return true;
+    // TODO: Implement
+    return;
 
     // Convert and compare
     const convertedPayload = c2paAssetBindingToSignerPayload(c2paAsset);
@@ -525,7 +554,7 @@ function validateVerifiedIdentities(
     }
 }
 
-async function parseCoseSign1(data: Uint8Array): Promise<any | null> {
+async function parseCoseSign1(data: Uint8Array): Promise<DecodedCoseSign1 | null> {
     try {
         // COSE_Sign1 structure (RFC 8152):
         // [
@@ -537,7 +566,7 @@ async function parseCoseSign1(data: Uint8Array): Promise<any | null> {
 
         // You'll need a CBOR decoder library (e.g., cbor, cbor-x, or cborg)
         // Example using a hypothetical CBOR library:
-        const cborDecoded = JUMBF.CBORBox.decoder.decode(data); // or similar
+        const cborDecoded = JUMBF.CBORBox.decoder.decode(data) as { value: DecodedCoseSign1Typing }; // or similar
         if (!cborDecoded?.value) {
             return null;
         }
@@ -549,12 +578,12 @@ async function parseCoseSign1(data: Uint8Array): Promise<any | null> {
         const [protectedHeaderBytes, unprotectedHeader, payload, signature] = cborDecodedValue;
 
         // Decode protected header
-        const protectedHeader = JUMBF.CBORBox.decoder.decode(protectedHeaderBytes);
+        const protectedHeader = JUMBF.CBORBox.decoder.decode(protectedHeaderBytes) as ProtectedHeaderMap;
         return {
             protectedHeader: {
                 alg: protectedHeader['1'], // COSE header parameter 1 is "alg"
-                contentType: protectedHeader['3'], // COSE header parameter 3 is "content type" 
-                x5chain: protectedHeader['33'], // COSE header parameter 33 is "x5chain" 
+                contentType: protectedHeader['3'], // COSE header parameter 3 is "content type"
+                x5chain: protectedHeader['33'], // COSE header parameter 33 is "x5chain"
             },
             unprotectedHeader,
             payload,

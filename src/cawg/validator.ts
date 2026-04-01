@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * CAWG Identity Assertion Validation
  * Functions for validating identity assertions according to CAWG specification v1.2
@@ -12,18 +7,16 @@
 
 import { Crypto, HashAlgorithm } from '../crypto';
 import * as JUMBF from '../jumbf';
-import { Assertion, Manifest, ValidationResult, ValidationStatusCode } from '../manifest';
-import { HashAssertion } from '../manifest/assertions/HashAssertion';
+import { Assertion, Claim, Manifest, ValidationResult, ValidationStatusCode } from '../manifest';
 import { IdentityAssertion } from '../manifest/assertions/IdentityAssertion';
-import type { HashedUriMap, HashMap, IdentityAssertionValidationOptions, SignerPayloadMap } from './types.js';
-import {
-    extractAssertionLabel,
-    findDuplicateReferences,
-    hashMapsEqual,
-    isHardBindingAssertion,
-    serializeSignerPayload,
-    validatePadding,
-} from './utils.js';
+import type {
+    ExpectedCountersignerMap,
+    HashedUriMap,
+    HashMap,
+    IdentityAssertionValidationOptions,
+    SignerPayloadMap,
+} from './types.js';
+import { extractAssertionLabel, findDuplicateReferences, serializeClaimData, validatePadding } from './utils.js';
 
 /**
  * Validate an identity assertion
@@ -159,58 +152,58 @@ async function validateHardBindingReference(
     // TODO
     return result;
 
-    // Find hard binding assertions in references
-    const hardBindingRefs = references.filter(ref => {
-        const label = extractAssertionLabel(ref.url);
-        return label && isHardBindingAssertion(label);
-    });
+    // // Find hard binding assertions in references
+    // const hardBindingRefs = references.filter(ref => {
+    //     const label = extractAssertionLabel(ref.url);
+    //     return label && isHardBindingAssertion(label);
+    // });
 
-    if (hardBindingRefs.length === 0) {
-        result.addError(
-            ValidationStatusCode.IdentityHardBindingMissing,
-            sourceBox,
-            'No hard binding assertion referenced',
-        );
-    }
+    // if (hardBindingRefs.length === 0) {
+    //     result.addError(
+    //         ValidationStatusCode.IdentityHardBindingMissing,
+    //         sourceBox,
+    //         'No hard binding assertion referenced',
+    //     );
+    // }
 
-    // Verify it's the correct hard binding for this manifest
-    // The correct one is determined by the algorithm described in
-    // C2PA spec Section 15.12
-    const expectedHardBindings = manifest.assertions?.getHardBindings();
+    // // Verify it's the correct hard binding for this manifest
+    // // The correct one is determined by the algorithm described in
+    // // C2PA spec Section 15.12
+    // const expectedHardBindings = manifest.assertions?.getHardBindings();
 
-    if (!expectedHardBindings || expectedHardBindings.length === 0) {
-        // No hard binding found in claim
-        result.addError(
-            ValidationStatusCode.IdentityHardBindingMissing,
-            sourceBox,
-            'No hard binding assertion found in claim',
-        );
-        return result;
-    }
-    const correctRef = hardBindingRefs.find(ref => {
-        const expectedHardBinding = expectedHardBindings.find(
-            binding => binding.label === extractAssertionLabel(ref.url),
-        ) as Assertion & HashAssertion;
-        return (
-            expectedHardBinding &&
-            hashMapsEqual(
-                { hash: ref.hash, alg: ref.alg ?? '' },
-                {
-                    hash: expectedHardBinding.hash!,
-                    alg: expectedHardBinding.algorithm!,
-                },
-            )
-        );
-    });
-    if (!correctRef) {
-        result.addError(
-            ValidationStatusCode.IdentityHardBindingIncorrect,
-            sourceBox,
-            'Hard binding reference does not match the active manifest binding',
-        );
-    }
+    // if (!expectedHardBindings || expectedHardBindings.length === 0) {
+    //     // No hard binding found in claim
+    //     result.addError(
+    //         ValidationStatusCode.IdentityHardBindingMissing,
+    //         sourceBox,
+    //         'No hard binding assertion found in claim',
+    //     );
+    //     return result;
+    // }
+    // const correctRef = hardBindingRefs.find(ref => {
+    //     const expectedHardBinding = expectedHardBindings.find(
+    //         binding => binding.label === extractAssertionLabel(ref.url),
+    //     ) as Assertion & HashAssertion;
+    //     return (
+    //         expectedHardBinding &&
+    //         hashMapsEqual(
+    //             { hash: ref.hash, alg: ref.alg ?? '' },
+    //             {
+    //                 hash: expectedHardBinding.hash!,
+    //                 alg: expectedHardBinding.algorithm!,
+    //             },
+    //         )
+    //     );
+    // });
+    // if (!correctRef) {
+    //     result.addError(
+    //         ValidationStatusCode.IdentityHardBindingIncorrect,
+    //         sourceBox,
+    //         'Hard binding reference does not match the active manifest binding',
+    //     );
+    // }
 
-    return result;
+    // return result;
 }
 
 /**
@@ -227,7 +220,7 @@ async function validateExpectedPartialClaim(
 
     try {
         // Clone claim and replace hashes with zeros as specified
-        const modifiedClaim = JSON.parse(JSON.stringify(sourceBox));
+        const modifiedClaim = JSON.parse(JSON.stringify(sourceBox)) as Claim;
 
         // Replace current identity assertion hash with zeros
         replaceAssertionHash(modifiedClaim, assertionLabel);
@@ -239,7 +232,7 @@ async function validateExpectedPartialClaim(
         }
 
         // Serialize and hash
-        const serialized = serializeSignerPayload(modifiedClaim);
+        const serialized = serializeClaimData(modifiedClaim);
         const computed = await computeHash(serialized, payload.expected_partial_claim.alg);
 
         const expected = payload.expected_partial_claim.hash;
@@ -302,7 +295,7 @@ async function validateExpectedClaimGenerator(expected: HashMap, sourceBox: JUMB
  * Validate expected_countersigners field
  */
 async function validateExpectedCountersigners(
-    expectedCountersigners: any[],
+    expectedCountersigners: ExpectedCountersignerMap[],
     sourceBox: JUMBF.SuperBox,
     assertionLabel: string,
 ): Promise<ValidationResult> {
@@ -359,11 +352,11 @@ async function validateExpectedCountersigners(
 /**
  * Helper: Replace assertion hash with zeros in claim
  */
-function replaceAssertionHash(claimData: any, label: string): void {
-    const assertions = claimData.assertions ?? claimData.created_assertions ?? [];
+function replaceAssertionHash(claimData: Claim, label: string): void {
+    const assertions = claimData.assertions ?? [];
 
     for (const assertion of assertions) {
-        const assertionLabel = extractAssertionLabel(assertion.url);
+        const assertionLabel = extractAssertionLabel(assertion.uri);
         if (assertionLabel === label) {
             assertion.hash = new Uint8Array(assertion.hash.length);
         }
@@ -373,19 +366,15 @@ function replaceAssertionHash(claimData: any, label: string): void {
 /**
  * Helper: Extract claim generator certificate
  */
-function extractClaimGeneratorCertificate(claimData: any): Uint8Array | null {
+function extractClaimGeneratorCertificate(claimData: JUMBF.SuperBox): Uint8Array | null {
     // Extract from claim signature structure
-    // This is a simplified version
-    if (claimData.signature?.certificates) {
-        return claimData.signature.certificates[0]; // End-entity certificate
-    }
     return null;
 }
 
 /**
  * Helper: Find other identity assertions in claim
  */
-function findIdentityAssertions(claimData: any, excludeLabel: string): IdentityAssertion[] {
+function findIdentityAssertions(claimData: JUMBF.SuperBox, excludeLabel: string): IdentityAssertion[] {
     // Implementation would find all identity assertions
     // except the one with excludeLabel
     return [];
@@ -394,7 +383,7 @@ function findIdentityAssertions(claimData: any, excludeLabel: string): IdentityA
 /**
  * Helper: Validate countersigner credentials
  */
-async function validateCountersignerCredentials(assertion: any, expectedCredentials: HashMap): Promise<boolean> {
+async function validateCountersignerCredentials(assertion: Assertion, expectedCredentials: HashMap): Promise<boolean> {
     // Extract and hash credentials from assertion
     // Implementation depends on credential type
     return true; // Simplified
@@ -430,7 +419,7 @@ function arrayEquals(a: Uint8Array, b: Uint8Array): boolean {
 /**
  * Helper: Deep equality check
  */
-function deepEqual(a: any, b: any): boolean {
+function deepEqual(a: unknown, b: unknown): boolean {
     return JSON.stringify(a) === JSON.stringify(b);
 }
 

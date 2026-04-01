@@ -64,6 +64,9 @@ export {
 // Validator functions
 export { validateIdentityAssertion, isWellFormedIdentityAssertion } from './validator.js';
 
+// Did resolver
+export { didResolver } from './did-resolver.js';
+
 // X.509/COSE support
 export {
     createCoseSignature,

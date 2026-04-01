@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /**
  * CAWG Identity Assertion Utilities
  * Helper functions for CBOR serialization, hashing, and data transformation
@@ -8,7 +6,7 @@
  */
 
 import * as cborX from 'cbor-x';
-import { IdentityAssertion } from '../manifest/index.js';
+import { Claim, IdentityAssertion } from '../manifest/index.js';
 import type { C2paAssetBinding, HashedUriMap, HashMap, SignerPayloadMap } from './types.js';
 
 /**
@@ -24,7 +22,22 @@ export function serializeSignerPayload(payload: SignerPayloadMap): Uint8Array {
  * Deserialize CBOR-encoded signer_payload
  */
 export function deserializeSignerPayload(data: Uint8Array): SignerPayloadMap {
-    return cborX.decode(data);
+    return cborX.decode(data) as SignerPayloadMap;
+}
+
+/**
+ * Serialize claim data using CBOR deterministic encoding
+ */
+export function serializeClaimData(payload: Claim): Uint8Array {
+    // Use deterministic encoding for consistent results
+    return cborX.encode(payload);
+}
+
+/**
+ * Deserialize CBOR-encoded claim data
+ */
+export function deserializeClaimData(data: Uint8Array): Claim {
+    return cborX.decode(data) as Claim;
 }
 
 /**
@@ -38,7 +51,7 @@ export function serializeIdentityAssertion(assertion: IdentityAssertion): Uint8A
  * Deserialize CBOR-encoded identity assertion
  */
 export function deserializeIdentityAssertion(data: Uint8Array): IdentityAssertion {
-    return cborX.decode(data);
+    return cborX.decode(data) as IdentityAssertion;
 }
 
 /**

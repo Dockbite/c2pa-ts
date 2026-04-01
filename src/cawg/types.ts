@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * CAWG Identity Assertion Types and Interfaces
  * Implementation of the Creator Assertions Working Group (CAWG) specification v1.2
@@ -175,7 +174,7 @@ export interface C2paAssetBinding {
     };
     /** Optional expected countersigners */
     expected_countersigners?: {
-        partial_signer_payload: any;
+        partial_signer_payload: Omit<C2paAssetBinding, 'expected_countersigners'>;
         expected_credentials?: {
             alg: string;
             hash: string;
@@ -216,7 +215,7 @@ export interface VerifiableCredentialBase {
     /** Credential subject */
     credentialSubject: IdentityClaimsCredentialSubject;
     /** Optional credential status (for revocation) */
-    credentialStatus?: any;
+    credentialStatus?: CredentialStatus | CredentialStatus[];
     /** Optional credential schema */
     credentialSchema?: {
         id: string;
@@ -314,3 +313,55 @@ export interface IdentityAssertionValidationOptions {
     /** Current time for validation (defaults to now) */
     validationTime?: Date;
 }
+
+/**
+ * Base type for credentialStatus (VC Data Model v2.0)
+ */
+export interface CredentialStatus {
+    /** URI identifying the status entry */
+    id: string;
+    /** Type of status method (e.g., "StatusList2021Entry") */
+    type: string;
+}
+
+/**
+ * Example: StatusList2021Entry (commonly used)
+ */
+export interface StatusList2021Entry extends CredentialStatus {
+    /** Type of status list entry */
+    type: 'StatusList2021Entry';
+    /** Purpose of the status list entry */
+    statusPurpose: 'revocation' | 'suspension';
+    /** Index of the status list entry */
+    statusListIndex: string;
+    /** URL to the status list credential */
+    statusListCredential: string;
+}
+
+/**
+ * COSE header labels volgens RFC 8152
+ * 1  = alg
+ * 3  = content type
+ * 33 = x5chain
+ */
+export interface ProtectedHeaderMap {
+    '1': number; // alg
+    '3'?: string | number; // contentType
+    '33': Uint8Array | Uint8Array[]; // x5chain (single cert of chain)
+    [key: string]: unknown;
+}
+
+export type DecodedCoseSign1Typing = [Uint8Array, Record<number | string, unknown>, Uint8Array | null, Uint8Array];
+export interface DecodedCoseSign1 {
+    protectedHeader: {
+        alg: number;
+        contentType?: string | number;
+        x5chain: Uint8Array | Uint8Array[];
+        [key: string]: unknown;
+    };
+    unprotectedHeader: Record<number | string, unknown>;
+    payload: Uint8Array | null;
+    signature: Uint8Array;
+}
+
+export type DIDPublicKey = JsonWebKey | string;
